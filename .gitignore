@@ -130,4 +130,5 @@ dmypy.json
 
 src/pruebas
 reports/
+videos/
 .DS_Store
