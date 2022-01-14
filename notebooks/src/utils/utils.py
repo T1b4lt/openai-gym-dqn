@@ -7,7 +7,7 @@ def get_reward_array(hist_dict):
     """
     Get the reward array from the history dict.
     """
-    hist = [val.get('reward') for val in hist_dict.values()]
+    hist = [episode['reward'] for episode in hist_dict]
     return np.array(hist)
 
 
@@ -15,7 +15,7 @@ def get_steps_array(hist_dict):
     """
     Get the steps array from the history dict.
     """
-    hist = [val.get('steps') for val in hist_dict.values()]
+    hist = [episode['steps'] for episode in hist_dict]
     return np.array(hist)
 
 
@@ -23,7 +23,7 @@ def get_penalties_array(hist_dict):
     """
     Get the penalties array from the history dict.
     """
-    hist = [val.get('penalties') for val in hist_dict.values()]
+    hist = [episode['penalties'] for episode in hist_dict]
     return np.array(hist)
 
 
@@ -31,7 +31,7 @@ def get_average_reward_last_n(hist_dict, n_episodes):
     """
     Get the average reward of the last n_episodes episodes.
     """
-    hist = [val.get('reward') for val in hist_dict.values()]
+    hist = [episode['reward'] for episode in hist_dict]
     return np.mean(hist[-n_episodes:])
 
 
@@ -39,7 +39,7 @@ def get_average_steps_last_n(hist_dict, n_episodes):
     """
     Get the average steps of the last n_episodes episodes.
     """
-    hist = [val.get('steps') for val in hist_dict.values()]
+    hist = [episode['steps'] for episode in hist_dict]
     return np.mean(hist[-n_episodes:])
 
 
@@ -47,7 +47,7 @@ def get_average_penalties_last_n(hist_dict, n_episodes):
     """
     Get the average penalties of the last n_episodes episodes.
     """
-    hist = [val.get('penalties') for val in hist_dict.values()]
+    hist = [episode['penalties'] for episode in hist_dict]
     return np.mean(hist[-n_episodes:])
 
 
