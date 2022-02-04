@@ -132,3 +132,4 @@ src/pruebas
 reports/
 videos/
 .DS_Store
+*.h5
