@@ -131,5 +131,6 @@ dmypy.json
 src/pruebas
 reports/
 videos/
-.DS_Store
+models/
 *.h5
+.DS_Store
