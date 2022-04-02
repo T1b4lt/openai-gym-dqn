@@ -77,7 +77,7 @@ print(model.summary())
 
 # Finally, we configure and compile our agent. You can use every built-in tensorflow.keras optimizer and
 # even the metrics!
-memory = SequentialMemory(limit=1000000, window_length=WINDOW_LENGTH)
+memory = SequentialMemory(limit=500000, window_length=WINDOW_LENGTH)
 processor = AtariProcessor()
 
 # Select a policy. We use eps-greedy action selection, which means that a random action is selected
@@ -109,6 +109,8 @@ if args.mode == 'train':
     callbacks = [ModelIntervalCheckpoint(
         checkpoint_weights_filename, interval=250000)]
     callbacks += [FileLogger(log_filename, interval=100)]
+    if args.weights:
+        dqn.load_weights(args.weights)
     dqn.fit(env, callbacks=callbacks, nb_steps=1750000, log_interval=10000)
 
     # After training is done, we save the final weights one more time.
