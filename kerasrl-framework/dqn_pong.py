@@ -7,7 +7,7 @@ import gym
 
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Activation, Flatten, Convolution2D, Permute
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam, RMSprop
 import tensorflow.keras.backend as K
 
 from rl.agents.dqn import DQNAgent
@@ -85,7 +85,7 @@ processor = AtariProcessor()
 # the agent initially explores the environment (high eps) and then gradually sticks to what it knows
 # (low eps). We also set a dedicated eps value that is used during testing. Note that we set it to 0.05
 # so that the agent still performs some random actions. This ensures that the agent cannot get stuck.
-policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr='eps', value_max=1., value_min=.1, value_test=.05,
+policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr='eps', value_max=1., value_min=0.1, value_test=0.05,
                               nb_steps=1000000)
 
 # The trade-off between exploration and exploitation is difficult and an on-going research topic.
@@ -95,9 +95,9 @@ policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr='eps', value_max=1., valu
 # Feel free to give it a try!
 
 dqn = DQNAgent(model=model, nb_actions=nb_actions, policy=policy, memory=memory,
-               processor=processor, nb_steps_warmup=50000, gamma=.99, target_model_update=10000,
+               processor=processor, nb_steps_warmup=50000, gamma=0.99, target_model_update=10000,
                train_interval=4, delta_clip=1.)
-dqn.compile(Adam(learning_rate=.00025), metrics=['mae'])
+dqn.compile(RMSprop(learning_rate=0.00025, momentum=0.95), metrics=['mae'])
 
 if args.mode == 'train':
     # Okay, now it's time to learn something! We capture the interrupt exception so that training
@@ -111,7 +111,7 @@ if args.mode == 'train':
     callbacks += [FileLogger(log_filename, interval=100)]
     if args.weights:
         dqn.load_weights(args.weights)
-    dqn.fit(env, callbacks=callbacks, nb_steps=1750000, log_interval=10000)
+    dqn.fit(env, callbacks=callbacks, nb_steps=10000000, log_interval=10000)
 
     # After training is done, we save the final weights one more time.
     dqn.save_weights(weights_filename, overwrite=True)
