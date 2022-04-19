@@ -15,6 +15,7 @@ from rl.policy import LinearAnnealedPolicy, BoltzmannQPolicy, EpsGreedyQPolicy
 from rl.memory import SequentialMemory
 from rl.core import Processor
 from rl.callbacks import FileLogger, ModelIntervalCheckpoint
+from dqn_custom_agent import DQNCustomAgent
 
 
 class MountaincarProcessor(Processor):
@@ -61,16 +62,17 @@ processor = MountaincarProcessor()
 policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr='eps', value_max=1., value_min=.1, value_test=.05,
                               nb_steps=100000)
 
-# The trade-off between exploration and exploitation is difficult and an on-going research topic.
-# If you want, you can experiment with the parameters or use a different policy. Another popular one
-# is Boltzmann-style exploration:
-# policy = BoltzmannQPolicy(tau=1.)
-# Feel free to give it a try!
-dqn = DQNAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmup=1000,
-               target_model_update=1e-2, policy=policy, gamma=.99, processor=processor)
-dqn.compile(Adam(learning_rate=1e-3), metrics=['mae'])
 
 if args.mode == 'train':
+    # The trade-off between exploration and exploitation is difficult and an on-going research topic.
+    # If you want, you can experiment with the parameters or use a different policy. Another popular one
+    # is Boltzmann-style exploration:
+    # policy = BoltzmannQPolicy(tau=1.)
+    # Feel free to give it a try!
+    dqn = DQNAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmup=1000,
+                   target_model_update=1e-2, policy=policy, gamma=.99, processor=processor)
+    dqn.compile(Adam(learning_rate=1e-3), metrics=['mae'])
+
     # Okay, now it's time to learn something! We capture the interrupt exception so that training
     # can be prematurely aborted. Notice that now you can use the built-in tensorflow.keras callbacks!
     weights_filename = f'checkpoints/mountaincar/dqn_{args.env_name}_weights.h5f'
@@ -89,8 +91,13 @@ if args.mode == 'train':
     # Finally, evaluate our algorithm for 10 episodes.
     dqn.test(env, nb_episodes=5, visualize=True)
 elif args.mode == 'test':
+    dqn = DQNCustomAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmup=1000,
+                         target_model_update=1e-2, policy=policy, gamma=.99, processor=processor)
+    dqn.compile(Adam(learning_rate=1e-3), metrics=['mae'])
+
     weights_filename = f'checkpoints/mountaincar/dqn_{args.env_name}_weights.h5f'
     if args.weights:
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
-    dqn.test(env, nb_episodes=5, visualize=True)
+    dqn.test(env, csv_name="mountaincar_noattack.csv",
+             nb_episodes=5, visualize=True)
