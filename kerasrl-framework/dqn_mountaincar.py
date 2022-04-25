@@ -99,5 +99,5 @@ elif args.mode == 'test':
     if args.weights:
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
-    dqn.test(env, csv_name="mountaincar_noattack.csv",
-             nb_episodes=5, visualize=True)
+    dqn.test(env, tuple_csv_name="mountaincar_noattack.csv", reward_csv_name="mountaincar_reward_noattack.csv",
+             nb_episodes=5, visualize=False)

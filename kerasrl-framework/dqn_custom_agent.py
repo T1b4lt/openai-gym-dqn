@@ -16,7 +16,7 @@ from rl.callbacks import (
 
 
 class DQNCustomAgent(DQNAgent):
-    def test(self, env, csv_name, nb_episodes=1, action_repetition=1, callbacks=None, visualize=True,
+    def test(self, env, tuple_csv_name, reward_csv_name, nb_episodes=1, action_repetition=1, callbacks=None, visualize=True,
              nb_max_episode_steps=None, nb_max_start_steps=0, start_step_policy=None, verbose=1):
         """Callback that is called before training begins.
         # Arguments
@@ -57,6 +57,10 @@ class DQNCustomAgent(DQNAgent):
         # Creo el dataframe en el que voy a guardar las tuplas (observacion, accion, estado_siguiente, recompensa)
         tuple_dataframe = pd.DataFrame(
             columns=['state', 'action', 'next_state', 'reward'])
+
+        # Creo el dataframe en el que voy a guardar las recompensas de cada epoca
+        reward_dataframe = pd.DataFrame(
+            columns=['reward'])
 
         callbacks = [] if not callbacks else callbacks[:]
 
@@ -185,11 +189,14 @@ class DQNCustomAgent(DQNAgent):
                 'nb_steps': episode_step,
             }
             callbacks.on_episode_end(episode, episode_logs)
+
+            reward_dataframe.loc[len(reward_dataframe)] = [episode_reward]
+
         callbacks.on_train_end()
         self._on_test_end()
 
         # Exporto el dataframe en un csv
-        print("LEN:", len(tuple_dataframe))
-        tuple_dataframe.to_csv(csv_name)
+        tuple_dataframe.to_csv(tuple_csv_name, index=False)
+        reward_dataframe.to_csv(reward_csv_name, index=False)
 
         return history
