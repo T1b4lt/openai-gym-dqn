@@ -55,12 +55,20 @@ class DQNCustomAgent(DQNAgent):
         self.step = 0
 
         # Creo el dataframe en el que voy a guardar las tuplas (observacion, accion, estado_siguiente, recompensa)
+        num_space_features = env.observation_space.shape[0]
+        header_array = []
+        for i in range(num_space_features):
+            header_array.append('state_' + str(i))
+        header_array.append('action')
+        for i in range(num_space_features):
+            header_array.append('next_state_' + str(i))
+        header_array.append('reward')
         tuple_dataframe = pd.DataFrame(
-            columns=['state', 'action', 'next_state', 'reward'])
+            columns=header_array)
 
         # Creo el dataframe en el que voy a guardar las recompensas de cada epoca
         reward_dataframe = pd.DataFrame(
-            columns=['reward'])
+            columns=['episode_reward'])
 
         callbacks = [] if not callbacks else callbacks[:]
 
@@ -141,8 +149,14 @@ class DQNCustomAgent(DQNAgent):
                     next_observation, r, d, info = env.step(action)
 
                     # Almaceno la tupla en el dataframe
-                    tuple_dataframe.loc[len(tuple_dataframe)] = [
-                        observation, action, next_observation, r]
+                    tuple_data = []
+                    for feature in observation:
+                        tuple_data.append(feature)
+                    tuple_data.append(action)
+                    for feature in next_observation:
+                        tuple_data.append(feature)
+                    tuple_data.append(r)
+                    tuple_dataframe.loc[len(tuple_dataframe)] = tuple_data
 
                     observation = deepcopy(next_observation)
                     if self.processor is not None:
