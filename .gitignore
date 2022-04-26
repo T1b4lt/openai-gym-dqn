@@ -133,4 +133,5 @@ reports/
 videos/
 models/
 *.h5
+*.csv
 .DS_Store
