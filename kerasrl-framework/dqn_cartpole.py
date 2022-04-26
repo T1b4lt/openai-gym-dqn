@@ -100,4 +100,4 @@ elif args.mode == 'test':
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
     dqn.test(env, tuple_csv_name="cartpole_noattack.csv", reward_csv_name="cartpole_reward_noattack.csv",
-             nb_episodes=5, visualize=False)
+             nb_episodes=1000, visualize=False)
