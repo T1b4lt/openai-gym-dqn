@@ -156,7 +156,9 @@ class DQNCustomAgent(DQNAgent):
                     for feature in next_observation:
                         tuple_data.append(feature)
                     tuple_data.append(r)
-                    tuple_dataframe.loc[len(tuple_dataframe)] = tuple_data
+                    # only append tuple_data if that row is not duplicated in the dataframe
+                    if not (tuple_dataframe == tuple_data).all(1).any():
+                        tuple_dataframe.loc[len(tuple_dataframe)] = tuple_data
 
                     observation = deepcopy(next_observation)
                     if self.processor is not None:
