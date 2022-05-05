@@ -148,6 +148,15 @@ class DQNCustomAgent(DQNAgent):
                     callbacks.on_action_begin(action)
                     next_observation, r, d, info = env.step(action)
 
+                    if self.processor is not None:
+                        next_observation, r, d, info = self.processor.process_step(
+                            next_observation, r, d, info)
+
+                    # AQUI IRÁ EL BLOQUE DE DEFENSA - DEPENDIENTE DE UN PARAMETRO "DEF=True"
+                    # 1 COJO LA TUPLA (OBSERVACION, ACCION, ESTADO_SIGUIENTE, RECOMPENSA)
+                    # 2 MIRO SI LA TUPLA ES ANOMALA O NORMAL
+                    # 3 SI ES ANOMALA, SUSTITUYO EL ESTADO_SIGUIENTE POR ALGO QUE NO SEA ANOMALO
+
                     # Almaceno la tupla en el dataframe
                     tuple_data = []
                     for feature in observation:
@@ -161,9 +170,7 @@ class DQNCustomAgent(DQNAgent):
                         tuple_dataframe.loc[len(tuple_dataframe)] = tuple_data
 
                     observation = deepcopy(next_observation)
-                    if self.processor is not None:
-                        observation, r, d, info = self.processor.process_step(
-                            observation, r, d, info)
+
                     callbacks.on_action_end(action)
                     reward += r
                     for key, value in info.items():
