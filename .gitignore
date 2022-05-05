@@ -134,4 +134,5 @@ videos/
 models/
 *.h5
 *.csv
+*.pkl
 .DS_Store
