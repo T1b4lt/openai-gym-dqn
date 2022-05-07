@@ -14,9 +14,12 @@ from rl.callbacks import (
     Visualizer
 )
 
+import pickle
+from sklearn.cluster import KMeans
+
 
 class DQNCustomAgent(DQNAgent):
-    def test(self, env, tuple_csv_name, reward_csv_name, nb_episodes=1, action_repetition=1, callbacks=None, visualize=True,
+    def test(self, env, tuple_csv_name, reward_csv_name, defense=False, kmeans_filepath=None, max_distances=None, nb_episodes=1, action_repetition=1, callbacks=None, visualize=True,
              nb_max_episode_steps=None, nb_max_start_steps=0, start_step_policy=None, verbose=1):
         """Callback that is called before training begins.
         # Arguments
@@ -53,6 +56,9 @@ class DQNCustomAgent(DQNAgent):
 
         self.training = False
         self.step = 0
+
+        if defense:
+            kmeans_model = pickle.load(open(kmeans_filepath, "rb"))
 
         # Creo el dataframe en el que voy a guardar las tuplas (observacion, accion, estado_siguiente, recompensa)
         num_space_features = env.observation_space.shape[0]
@@ -152,12 +158,7 @@ class DQNCustomAgent(DQNAgent):
                         next_observation, r, d, info = self.processor.process_step(
                             next_observation, r, d, info)
 
-                    # AQUI IRÁ EL BLOQUE DE DEFENSA - DEPENDIENTE DE UN PARAMETRO "DEF=True"
-                    # 1 COJO LA TUPLA (OBSERVACION, ACCION, ESTADO_SIGUIENTE, RECOMPENSA)
-                    # 2 MIRO SI LA TUPLA ES ANOMALA O NORMAL
-                    # 3 SI ES ANOMALA, SUSTITUYO EL ESTADO_SIGUIENTE POR ALGO QUE NO SEA ANOMALO
-
-                    # Almaceno la tupla en el dataframe
+                    # Creo la tupla para el dataframe y para comprobar si es anomala
                     tuple_data = []
                     for feature in observation:
                         tuple_data.append(feature)
@@ -165,6 +166,32 @@ class DQNCustomAgent(DQNAgent):
                     for feature in next_observation:
                         tuple_data.append(feature)
                     tuple_data.append(r)
+
+                    # AQUI IRÁ EL BLOQUE DE DEFENSA - DEPENDIENTE DE UN PARAMETRO "DEF=True"
+                    # 1 COJO LA TUPLA (OBSERVACION, ACCION, ESTADO_SIGUIENTE, RECOMPENSA)
+                    # 2 MIRO SI LA TUPLA ES ANOMALA O NORMAL
+                    # 3 SI ES ANOMALA, SUSTITUYO EL ESTADO_SIGUIENTE POR ALGO QUE NO SEA ANOMALO
+                    if defense:
+                        # Comprobamos si la tupla es anomala de alguna manera
+                        distances_2_centroids = kmeans_model.transform(
+                            [tuple_data])
+                        closest_centroid = np.argmin(distances_2_centroids)
+                        anomal_tuple = False
+                        if distances_2_centroids[0][closest_centroid] > max_distances[closest_centroid]*0.8:
+                            anomal_tuple = True
+
+                        # Si la tupla es anomala, hacemos algo
+                        if anomal_tuple:
+                            next_observation = observation
+                            # creamos de nuevo la tupla sana
+                            tuple_data = []
+                            for feature in observation:
+                                tuple_data.append(feature)
+                            tuple_data.append(action)
+                            for feature in next_observation:
+                                tuple_data.append(feature)
+                            tuple_data.append(r)
+
                     # only append tuple_data if that row is not duplicated in the dataframe
                     if not (tuple_dataframe == tuple_data).all(1).any():
                         tuple_dataframe.loc[len(tuple_dataframe)] = tuple_data
