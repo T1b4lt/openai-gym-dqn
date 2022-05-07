@@ -59,7 +59,8 @@ class CartpoleProcessor(Processor):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--mode', choices=['train', 'test'], default='train')
+parser.add_argument(
+    '--mode', choices=['train', 'testa', 'testd'], default='train')
 parser.add_argument('--env-name', type=str, default='CartPole-v0')
 parser.add_argument('--weights', type=str, default=None)
 args = parser.parse_args()
@@ -124,7 +125,7 @@ if args.mode == 'train':
 
     # Finally, evaluate our algorithm for 10 episodes.
     dqn.test(env, nb_episodes=5, visualize=False)
-elif args.mode == 'test':
+elif args.mode == 'testa':
     dqn = DQNCustomAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmup=1000,
                          target_model_update=1e-2, policy=policy, gamma=.99, processor=processor)
     dqn.compile(Adam(learning_rate=1e-3), metrics=['mae'])
@@ -135,3 +136,21 @@ elif args.mode == 'test':
     dqn.load_weights(weights_filename)
     dqn.test(env, tuple_csv_name="cartpole_attack.csv", reward_csv_name="cartpole_reward_attack.csv",
              nb_episodes=1000, visualize=False)
+
+elif args.mode == 'testd':
+    dqn = DQNCustomAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmup=1000,
+                         target_model_update=1e-2, policy=policy, gamma=.99, processor=processor)
+    dqn.compile(Adam(learning_rate=1e-3), metrics=['mae'])
+
+    weights_filename = f'checkpoints/cartpole/dqn_{args.env_name}_weights.h5f'
+    if args.weights:
+        weights_filename = args.weights
+    dqn.load_weights(weights_filename)
+    dqn.test(env,
+             tuple_csv_name="cartpole_defense.csv",
+             reward_csv_name="cartpole_reward_defense.csv",
+             defense=True,
+             kmeans_filepath="notebooks/kmeans_cartpole.pkl",
+             max_distances=[3, 3],
+             nb_episodes=5,
+             visualize=False)
