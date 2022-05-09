@@ -122,5 +122,5 @@ elif args.mode == 'testd':
              defense=True,
              kmeans_filepath="notebooks/kmeans_mountaincar.pkl",
              max_distances=[1.20, 0.93, 1.29],
-             nb_episodes=5,
+             nb_episodes=1000,
              visualize=False)

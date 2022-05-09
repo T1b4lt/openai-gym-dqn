@@ -152,5 +152,5 @@ elif args.mode == 'testd':
              defense=True,
              kmeans_filepath="notebooks/kmeans_cartpole.pkl",
              max_distances=[3, 3],
-             nb_episodes=5,
+             nb_episodes=1000,
              visualize=False)
