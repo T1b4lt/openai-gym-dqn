@@ -2,6 +2,7 @@ from rl.agents.dqn import DQNAgent
 import warnings
 from copy import deepcopy
 
+import math
 import numpy as np
 import pandas as pd
 from tensorflow.keras.callbacks import History
@@ -19,7 +20,36 @@ from sklearn.cluster import KMeans
 
 
 class DQNCustomAgent(DQNAgent):
-    def test(self, env, tuple_csv_name, reward_csv_name, defense=False, kmeans_filepath=None, max_distances=None, nb_episodes=1, action_repetition=1, callbacks=None, visualize=True,
+    def back_to_previous_observation(self, tuple_data, len_observation):
+        observation = tuple_data[:len_observation]
+        action = tuple_data[len_observation]
+        next_observation = observation
+        r = tuple_data[-1]
+        # creamos de nuevo la tupla sana
+        new_tuple_data = []
+        for feature in observation:
+            new_tuple_data.append(feature)
+        new_tuple_data.append(action)
+        for feature in next_observation:
+            new_tuple_data.append(feature)
+        new_tuple_data.append(r)
+        return next_observation, new_tuple_data
+
+    def closest_safe_observation(self, tuple_data, tuples_df, len_observation, distance_threshold):
+        min_distance = math.inf
+        min_distance_idx = -1
+        for idx, row in tuples_df.iterrows():
+            distance = math.dist(tuple_data, row)
+            if distance < min_distance:
+                min_distance = distance
+                min_distance_idx = idx
+                if distance < distance_threshold:
+                    break
+        new_tuple_data = tuples_df.iloc[min_distance_idx]
+        next_observation = new_tuple_data[:len_observation]
+        return next_observation, new_tuple_data
+
+    def test(self, env, tuple_csv_name, reward_csv_name, defense=False, substitution_method=None, kmeans_filepath=None, tuples_filepath=None, max_distances=None, nb_episodes=1, action_repetition=1, callbacks=None, visualize=True,
              nb_max_episode_steps=None, nb_max_start_steps=0, start_step_policy=None, verbose=1):
         """Callback that is called before training begins.
         # Arguments
@@ -59,6 +89,7 @@ class DQNCustomAgent(DQNAgent):
 
         if defense:
             kmeans_model = pickle.load(open(kmeans_filepath, "rb"))
+            tuples_df = pd.read_csv(tuples_filepath)
 
         # Creo el dataframe en el que voy a guardar las tuplas (observacion, accion, estado_siguiente, recompensa)
         num_space_features = env.observation_space.shape[0]
@@ -177,20 +208,19 @@ class DQNCustomAgent(DQNAgent):
                             [tuple_data])
                         closest_centroid = np.argmin(distances_2_centroids)
                         anomal_tuple = False
-                        if distances_2_centroids[0][closest_centroid] > max_distances[closest_centroid]*0.8:
+                        if distances_2_centroids[0][closest_centroid] > max_distances*0.8:
                             anomal_tuple = True
 
                         # Si la tupla es anomala, hacemos algo
                         if anomal_tuple:
-                            next_observation = observation
-                            # creamos de nuevo la tupla sana
-                            tuple_data = []
-                            for feature in observation:
-                                tuple_data.append(feature)
-                            tuple_data.append(action)
-                            for feature in next_observation:
-                                tuple_data.append(feature)
-                            tuple_data.append(r)
+                            # Funcion que vuelve simplemente al estado anterior
+                            if substitution_method == 1:
+                                next_observation, tuple_data = self.back_to_previous_observation(
+                                    tuple_data, len(observation))
+                            # Funcion que busca la tupla segura mas cercana a la actual
+                            elif substitution_method == 2:
+                                next_observation, tuple_data = self.closest_safe_observation(
+                                    tuple_data, tuples_df, len(observation), max_distances)
 
                     # only append tuple_data if that row is not duplicated in the dataframe
                     if not (tuple_dataframe == tuple_data).all(1).any():
