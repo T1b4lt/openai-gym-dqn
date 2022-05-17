@@ -5,6 +5,7 @@ from copy import deepcopy
 import math
 import numpy as np
 import pandas as pd
+import scipy
 from tensorflow.keras.callbacks import History
 
 from rl.callbacks import (
@@ -17,9 +18,48 @@ from rl.callbacks import (
 
 import pickle
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 
 
 class DQNCustomAgent(DQNAgent):
+    def detect_with_kmeans(self, kmeans_model, tuple_data, max_distances):
+        distances_2_centroids = kmeans_model.transform([tuple_data])
+        closest_centroid = np.argmin(distances_2_centroids)
+        anomal_tuple = False
+        if distances_2_centroids[0][closest_centroid] > max_distances*0.8:
+            anomal_tuple = True
+        return anomal_tuple
+
+    def detect_with_interpolation(self, tuple_data, pca, interpolation_func):
+        distancia = math.inf
+        anomal_tuple = False
+        tuple_2d = pca.transform([tuple_data])[0]
+        try:
+            pred_y = interpolation_func(tuple_2d[0])
+            distancia = abs(tuple_2d[1]-pred_y)
+            if distancia > 0.01:
+                anomal_tuple = True
+        except ValueError:
+            anomal_tuple = True
+        return anomal_tuple
+
+    def detect_column_cartpole(self, tuple_data, tuples_2d_df, pca):
+        pc1_left_mean = tuples_2d_df[tuples_2d_df['PC1_2d'] < 0].PC1_2d.mean()
+        pc1_right_mean = tuples_2d_df[tuples_2d_df['PC1_2d'] > 0].PC1_2d.mean()
+        pc2_max = np.max(tuples_2d_df.PC2_2d.values)
+        pc2_min = np.min(tuples_2d_df.PC2_2d.values)
+        conf_factor = 0.01
+        anomal_tuple = True
+        tuple_2d = pca.transform([tuple_data])[0]
+        if (1+conf_factor)*pc1_left_mean <= tuple_2d[0] <= pc1_left_mean*(1-conf_factor):
+            anomal_tuple = False
+        if (1-conf_factor)*pc1_right_mean <= tuple_2d[0] <= pc1_right_mean*(1+conf_factor):
+            anomal_tuple = False
+
+        if tuple_2d[1] > pc2_max or tuple_2d[1] < pc2_min:
+            anomal_tuple = True
+        return anomal_tuple
+
     def back_to_previous_observation(self, tuple_data, len_observation):
         observation = tuple_data[:len_observation]
         action = tuple_data[len_observation]
@@ -46,10 +86,10 @@ class DQNCustomAgent(DQNAgent):
                 if distance < distance_threshold:
                     break
         new_tuple_data = tuples_df.iloc[min_distance_idx]
-        next_observation = new_tuple_data[:len_observation]
+        next_observation = new_tuple_data[-(len_observation+1):-1]
         return next_observation, new_tuple_data
 
-    def test(self, env, tuple_csv_name, reward_csv_name, defense=False, substitution_method=None, kmeans_filepath=None, tuples_filepath=None, max_distances=None, nb_episodes=1, action_repetition=1, callbacks=None, visualize=True,
+    def test(self, env, tuple_csv_name, reward_csv_name, defense=False, anomaly_method=None, substitution_method=None, kmeans_filepath=None, tuples_filepath=None, max_distances=None, nb_episodes=1, action_repetition=1, callbacks=None, visualize=True,
              nb_max_episode_steps=None, nb_max_start_steps=0, start_step_policy=None, verbose=1):
         """Callback that is called before training begins.
         # Arguments
@@ -90,6 +130,12 @@ class DQNCustomAgent(DQNAgent):
         if defense:
             kmeans_model = pickle.load(open(kmeans_filepath, "rb"))
             tuples_df = pd.read_csv(tuples_filepath)
+            pca_model = PCA(n_components=2)
+            tuples_2d_df = pd.DataFrame(
+                pca_model.fit_transform(tuples_df.values))
+            tuples_2d_df.columns = ["PC1_2d", "PC2_2d"]
+            linear_interpolation_func = scipy.interpolate.interp1d(
+                tuples_2d_df.PC1_2d, tuples_2d_df.PC2_2d, kind='linear')
 
         # Creo el dataframe en el que voy a guardar las tuplas (observacion, accion, estado_siguiente, recompensa)
         num_space_features = env.observation_space.shape[0]
@@ -203,13 +249,17 @@ class DQNCustomAgent(DQNAgent):
                     # 2 MIRO SI LA TUPLA ES ANOMALA O NORMAL
                     # 3 SI ES ANOMALA, SUSTITUYO EL ESTADO_SIGUIENTE POR ALGO QUE NO SEA ANOMALO
                     if defense:
-                        # Comprobamos si la tupla es anomala de alguna manera
-                        distances_2_centroids = kmeans_model.transform(
-                            [tuple_data])
-                        closest_centroid = np.argmin(distances_2_centroids)
                         anomal_tuple = False
-                        if distances_2_centroids[0][closest_centroid] > max_distances*0.8:
-                            anomal_tuple = True
+                        # Comprobamos si la tupla es anomala de alguna manera
+                        if anomaly_method == 1:
+                            anomal_tuple = self.detect_with_kmeans(
+                                kmeans_model, tuple_data, max_distances)
+                        elif anomaly_method == 2:
+                            anomal_tuple = self.detect_with_interpolation(
+                                tuple_data, pca_model, linear_interpolation_func)
+                        elif anomaly_method == 3:
+                            anomal_tuple = self.detect_column_cartpole(
+                                tuple_data, tuples_2d_df, pca_model)
 
                         # Si la tupla es anomala, hacemos algo
                         if anomal_tuple:
@@ -220,7 +270,7 @@ class DQNCustomAgent(DQNAgent):
                             # Funcion que busca la tupla segura mas cercana a la actual
                             elif substitution_method == 2:
                                 next_observation, tuple_data = self.closest_safe_observation(
-                                    tuple_data, tuples_df, len(observation), max_distances)
+                                    tuple_data, tuples_df, len(observation), 0.01)
 
                     # only append tuple_data if that row is not duplicated in the dataframe
                     if not (tuple_dataframe == tuple_data).all(1).any():

@@ -147,10 +147,13 @@ elif args.mode == 'testd':
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
     dqn.test(env,
-             tuple_csv_name="cartpole_defense.csv",
-             reward_csv_name="cartpole_reward_defense.csv",
+             tuple_csv_name="cartpole_defense_2.csv",
+             reward_csv_name="cartpole_reward_defense_2.csv",
              defense=True,
-             kmeans_filepath="notebooks/kmeans_cartpole.pkl",
-             max_distances=[3, 3],
-             nb_episodes=1000,
+             anomaly_method=3,
+             substitution_method=1,
+             kmeans_filepath="notebooks/kmeans_cartpole_500c.pkl",
+             tuples_filepath="cartpole_noattack.csv",
+             max_distances=0.1,
+             nb_episodes=5,
              visualize=False)
