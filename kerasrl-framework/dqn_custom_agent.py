@@ -22,38 +22,37 @@ from sklearn.decomposition import PCA
 
 
 class DQNCustomAgent(DQNAgent):
-    def detect_with_kmeans(self, kmeans_model, tuple_data, max_distances):
+    def detect_with_kmeans(self, kmeans_model, tuple_data, max_distance):
         distances_2_centroids = kmeans_model.transform([tuple_data])
         closest_centroid = np.argmin(distances_2_centroids)
         anomal_tuple = False
-        if distances_2_centroids[0][closest_centroid] > max_distances*0.8:
+        if distances_2_centroids[0][closest_centroid] > max_distance:
             anomal_tuple = True
         return anomal_tuple
 
-    def detect_with_interpolation(self, tuple_data, pca, interpolation_func):
+    def detect_with_interpolation(self, tuple_data, pca, interpolation_func, max_distance):
         distancia = math.inf
         anomal_tuple = False
         tuple_2d = pca.transform([tuple_data])[0]
         try:
             pred_y = interpolation_func(tuple_2d[0])
             distancia = abs(tuple_2d[1]-pred_y)
-            if distancia > 0.01:
+            if distancia > max_distance:
                 anomal_tuple = True
         except ValueError:
             anomal_tuple = True
         return anomal_tuple
 
-    def detect_column_cartpole(self, tuple_data, tuples_2d_df, pca):
+    def detect_column_cartpole(self, tuple_data, tuples_2d_df, pca, max_distance):
         pc1_left_mean = tuples_2d_df[tuples_2d_df['PC1_2d'] < 0].PC1_2d.mean()
         pc1_right_mean = tuples_2d_df[tuples_2d_df['PC1_2d'] > 0].PC1_2d.mean()
         pc2_max = np.max(tuples_2d_df.PC2_2d.values)
         pc2_min = np.min(tuples_2d_df.PC2_2d.values)
-        conf_factor = 0.01
         anomal_tuple = True
         tuple_2d = pca.transform([tuple_data])[0]
-        if (1+conf_factor)*pc1_left_mean <= tuple_2d[0] <= pc1_left_mean*(1-conf_factor):
+        if (1+max_distance)*pc1_left_mean <= tuple_2d[0] <= pc1_left_mean*(1-max_distance):
             anomal_tuple = False
-        if (1-conf_factor)*pc1_right_mean <= tuple_2d[0] <= pc1_right_mean*(1+conf_factor):
+        if (1-max_distance)*pc1_right_mean <= tuple_2d[0] <= pc1_right_mean*(1+max_distance):
             anomal_tuple = False
 
         if tuple_2d[1] > pc2_max or tuple_2d[1] < pc2_min:
@@ -89,7 +88,7 @@ class DQNCustomAgent(DQNAgent):
         next_observation = new_tuple_data[-(len_observation+1):-1]
         return next_observation, new_tuple_data
 
-    def test(self, env, tuple_csv_name, reward_csv_name, defense=False, anomaly_method=None, substitution_method=None, kmeans_filepath=None, tuples_filepath=None, max_distances=None, nb_episodes=1, action_repetition=1, callbacks=None, visualize=True,
+    def test(self, env, tuple_csv_name, reward_csv_name, defense=False, classification_csv_name=None, anomaly_method=None, substitution_method=None, kmeans_filepath=None, tuples_filepath=None, max_distance=None, nb_episodes=1, action_repetition=1, callbacks=None, visualize=True,
              nb_max_episode_steps=None, nb_max_start_steps=0, start_step_policy=None, verbose=1):
         """Callback that is called before training begins.
         # Arguments
@@ -128,12 +127,21 @@ class DQNCustomAgent(DQNAgent):
         self.step = 0
 
         if defense:
+            # Creo el dataframe para ver si el clasificador de estados anomalos utilizado funciona
+            classification_dataframe = pd.DataFrame(
+                columns=['anomalo', 'pred_anomalo'])
+            # Cargo el modelo de clasificacion de estados anomalos
             kmeans_model = pickle.load(open(kmeans_filepath, "rb"))
+            # Cargo el dataframe de estados seguros
             tuples_df = pd.read_csv(tuples_filepath)
+            # Creo un modelo PCA para reducir la dimensionalidad
             pca_model = PCA(n_components=2)
+            # Entreno el modelo PCA con los estados seguros, igual que en los notebooks
             tuples_2d_df = pd.DataFrame(
                 pca_model.fit_transform(tuples_df.values))
+            # Añado los nombres de las columnas al dataframe de dos dimensiones
             tuples_2d_df.columns = ["PC1_2d", "PC2_2d"]
+            # Creo la funcion de interpolacion lineal
             linear_interpolation_func = scipy.interpolate.interp1d(
                 tuples_2d_df.PC1_2d, tuples_2d_df.PC2_2d, kind='linear')
 
@@ -229,18 +237,22 @@ class DQNCustomAgent(DQNAgent):
                 accumulated_info = {}
                 for _ in range(action_repetition):
                     callbacks.on_action_begin(action)
-                    next_observation, r, d, info = env.step(action)
+                    next_observation_1, r, d, info = env.step(action)
 
                     if self.processor is not None:
-                        next_observation, r, d, info = self.processor.process_step(
-                            next_observation, r, d, info)
+                        next_observation_2, r, d, info = self.processor.process_step(
+                            next_observation_1, r, d, info)
+
+                    verdad_tupla_anomala = False
+                    if (next_observation_1 != next_observation_2).any():
+                        verdad_tupla_anomala = True
 
                     # Creo la tupla para el dataframe y para comprobar si es anomala
                     tuple_data = []
                     for feature in observation:
                         tuple_data.append(feature)
                     tuple_data.append(action)
-                    for feature in next_observation:
+                    for feature in next_observation_2:
                         tuple_data.append(feature)
                     tuple_data.append(r)
 
@@ -253,30 +265,34 @@ class DQNCustomAgent(DQNAgent):
                         # Comprobamos si la tupla es anomala de alguna manera
                         if anomaly_method == 1:
                             anomal_tuple = self.detect_with_kmeans(
-                                kmeans_model, tuple_data, max_distances)
+                                kmeans_model, tuple_data, max_distance)
                         elif anomaly_method == 2:
                             anomal_tuple = self.detect_with_interpolation(
-                                tuple_data, pca_model, linear_interpolation_func)
+                                tuple_data, pca_model, linear_interpolation_func, max_distance)
                         elif anomaly_method == 3:
                             anomal_tuple = self.detect_column_cartpole(
-                                tuple_data, tuples_2d_df, pca_model)
+                                tuple_data, tuples_2d_df, pca_model, max_distance)
+
+                        # Guardamos tanto la verdad sobre si la tupla es anomala como la prediccion del metodo de clasificacion seleccionado
+                        classification_dataframe.loc[len(classification_dataframe)] = [
+                            verdad_tupla_anomala, anomal_tuple]
 
                         # Si la tupla es anomala, hacemos algo
                         if anomal_tuple:
                             # Funcion que vuelve simplemente al estado anterior
                             if substitution_method == 1:
-                                next_observation, tuple_data = self.back_to_previous_observation(
+                                next_observation_2, tuple_data = self.back_to_previous_observation(
                                     tuple_data, len(observation))
                             # Funcion que busca la tupla segura mas cercana a la actual
                             elif substitution_method == 2:
-                                next_observation, tuple_data = self.closest_safe_observation(
+                                next_observation_2, tuple_data = self.closest_safe_observation(
                                     tuple_data, tuples_df, len(observation), 0.01)
 
                     # only append tuple_data if that row is not duplicated in the dataframe
                     if not (tuple_dataframe == tuple_data).all(1).any():
                         tuple_dataframe.loc[len(tuple_dataframe)] = tuple_data
 
-                    observation = deepcopy(next_observation)
+                    observation = deepcopy(next_observation_2)
 
                     callbacks.on_action_end(action)
                     reward += r
@@ -328,5 +344,8 @@ class DQNCustomAgent(DQNAgent):
         # Exporto el dataframe en un csv
         tuple_dataframe.to_csv(tuple_csv_name, index=False)
         reward_dataframe.to_csv(reward_csv_name, index=False)
+        if defense:
+            classification_dataframe.to_csv(
+                classification_csv_name, index=False)
 
         return history
