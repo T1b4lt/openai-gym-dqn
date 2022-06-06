@@ -126,25 +126,6 @@ class DQNCustomAgent(DQNAgent):
         self.training = False
         self.step = 0
 
-        if defense:
-            # Creo el dataframe para ver si el clasificador de estados anomalos utilizado funciona
-            classification_dataframe = pd.DataFrame(
-                columns=['anomalo', 'pred_anomalo'])
-            # Cargo el modelo de clasificacion de estados anomalos
-            kmeans_model = pickle.load(open(kmeans_filepath, "rb"))
-            # Cargo el dataframe de estados seguros
-            tuples_df = pd.read_csv(tuples_filepath)
-            # Creo un modelo PCA para reducir la dimensionalidad
-            pca_model = PCA(n_components=2)
-            # Entreno el modelo PCA con los estados seguros, igual que en los notebooks
-            tuples_2d_df = pd.DataFrame(
-                pca_model.fit_transform(tuples_df.values))
-            # Añado los nombres de las columnas al dataframe de dos dimensiones
-            tuples_2d_df.columns = ["PC1_2d", "PC2_2d"]
-            # Creo la funcion de interpolacion lineal
-            linear_interpolation_func = scipy.interpolate.interp1d(
-                tuples_2d_df.PC1_2d, tuples_2d_df.PC2_2d, kind='linear')
-
         # Creo el dataframe en el que voy a guardar las tuplas (observacion, accion, estado_siguiente, recompensa)
         num_space_features = env.observation_space.shape[0]
         header_array = []
@@ -160,6 +141,26 @@ class DQNCustomAgent(DQNAgent):
         # Creo el dataframe en el que voy a guardar las recompensas de cada epoca
         reward_dataframe = pd.DataFrame(
             columns=['episode_reward'])
+
+        # Creo el dataframe para ver si el clasificador de estados anomalos utilizado funciona
+        classification_dataframe = pd.DataFrame(
+            columns=header_array+['anomalo'])
+
+        if defense:
+            # Cargo el modelo de clasificacion de estados anomalos
+            kmeans_model = pickle.load(open(kmeans_filepath, "rb"))
+            # Cargo el dataframe de estados seguros
+            tuples_df = pd.read_csv(tuples_filepath)
+            # Creo un modelo PCA para reducir la dimensionalidad
+            pca_model = PCA(n_components=2)
+            # Entreno el modelo PCA con los estados seguros, igual que en los notebooks
+            tuples_2d_df = pd.DataFrame(
+                pca_model.fit_transform(tuples_df.values))
+            # Añado los nombres de las columnas al dataframe de dos dimensiones
+            tuples_2d_df.columns = ["PC1_2d", "PC2_2d"]
+            # Creo la funcion de interpolacion lineal
+            linear_interpolation_func = scipy.interpolate.interp1d(
+                tuples_2d_df.PC1_2d, tuples_2d_df.PC2_2d, kind='linear')
 
         callbacks = [] if not callbacks else callbacks[:]
 
@@ -256,6 +257,11 @@ class DQNCustomAgent(DQNAgent):
                         tuple_data.append(feature)
                     tuple_data.append(r)
 
+                    # Guardamos tanto la tupla como la verdad de si esa tupla es anomala o no
+                    tuple_plus_anomaly = (tuple_data+[verdad_tupla_anomala])
+                    classification_dataframe.loc[len(
+                        classification_dataframe)] = tuple_plus_anomaly
+
                     # AQUI IRÁ EL BLOQUE DE DEFENSA - DEPENDIENTE DE UN PARAMETRO "DEF=True"
                     # 1 COJO LA TUPLA (OBSERVACION, ACCION, ESTADO_SIGUIENTE, RECOMPENSA)
                     # 2 MIRO SI LA TUPLA ES ANOMALA O NORMAL
@@ -272,10 +278,6 @@ class DQNCustomAgent(DQNAgent):
                         elif anomaly_method == 3:
                             anomal_tuple = self.detect_column_cartpole(
                                 tuple_data, tuples_2d_df, pca_model, max_distance)
-
-                        # Guardamos tanto la verdad sobre si la tupla es anomala como la prediccion del metodo de clasificacion seleccionado
-                        classification_dataframe.loc[len(classification_dataframe)] = [
-                            verdad_tupla_anomala, anomal_tuple]
 
                         # Si la tupla es anomala, hacemos algo
                         if anomal_tuple:
