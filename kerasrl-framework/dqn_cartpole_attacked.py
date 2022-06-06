@@ -134,7 +134,7 @@ elif args.mode == 'testa':
     if args.weights:
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
-    dqn.test(env, tuple_csv_name="cartpole_attack.csv", reward_csv_name="cartpole_reward_attack.csv",
+    dqn.test(env, tuple_csv_name="ejecuciones_cartpole/cartpole_attack.csv", reward_csv_name="ejecuciones_cartpole/cartpole_reward_attack.csv",
              nb_episodes=1000, visualize=False)
 
 elif args.mode == 'testd':
@@ -147,13 +147,14 @@ elif args.mode == 'testd':
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
     dqn.test(env,
-             tuple_csv_name="cartpole_defense_2.csv",
-             reward_csv_name="cartpole_reward_defense_2.csv",
+             tuple_csv_name="ejecuciones_cartpole/cartpole_defense.csv",
+             reward_csv_name="ejecuciones_cartpole/cartpole_reward_defense.csv",
              defense=True,
+             classification_csv_name="resultados_clasificadores/cartpole_classification.csv",
              anomaly_method=3,
              substitution_method=1,
              kmeans_filepath="notebooks/kmeans_cartpole_500c.pkl",
-             tuples_filepath="cartpole_noattack.csv",
-             max_distances=0.1,
+             tuples_filepath="ejecuciones_cartpole/cartpole_noattack.csv",
+             max_distance=50,
              nb_episodes=5,
              visualize=False)
