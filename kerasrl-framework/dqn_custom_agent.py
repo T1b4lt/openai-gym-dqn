@@ -22,37 +22,37 @@ from sklearn.decomposition import PCA
 
 
 class DQNCustomAgent(DQNAgent):
-    def detect_with_kmeans(self, kmeans_model, tuple_data, max_distance):
+    def detect_with_kmeans(self, kmeans_model, tuple_data, threshold):
         distances_2_centroids = kmeans_model.transform([tuple_data])
         closest_centroid = np.argmin(distances_2_centroids)
         anomal_tuple = False
-        if distances_2_centroids[0][closest_centroid] > max_distance:
+        if distances_2_centroids[0][closest_centroid] > threshold:
             anomal_tuple = True
         return anomal_tuple
 
-    def detect_with_interpolation(self, tuple_data, pca, interpolation_func, max_distance):
+    def detect_with_interpolation(self, tuple_data, pca, interpolation_func, threshold):
         distancia = math.inf
         anomal_tuple = False
         tuple_2d = pca.transform([tuple_data])[0]
         try:
             pred_y = interpolation_func(tuple_2d[0])
             distancia = abs(tuple_2d[1]-pred_y)
-            if distancia > max_distance:
+            if distancia > threshold:
                 anomal_tuple = True
         except ValueError:
             anomal_tuple = True
         return anomal_tuple
 
-    def detect_column_cartpole(self, tuple_data, tuples_2d_df, pca, max_distance):
+    def detect_column_cartpole(self, tuple_data, tuples_2d_df, pca, threshold):
         pc1_left_mean = tuples_2d_df[tuples_2d_df['PC1_2d'] < 0].PC1_2d.mean()
         pc1_right_mean = tuples_2d_df[tuples_2d_df['PC1_2d'] > 0].PC1_2d.mean()
         pc2_max = np.max(tuples_2d_df.PC2_2d.values)
         pc2_min = np.min(tuples_2d_df.PC2_2d.values)
         anomal_tuple = True
         tuple_2d = pca.transform([tuple_data])[0]
-        if (1+max_distance)*pc1_left_mean <= tuple_2d[0] <= pc1_left_mean*(1-max_distance):
+        if (1+threshold)*pc1_left_mean <= tuple_2d[0] <= pc1_left_mean*(1-threshold):
             anomal_tuple = False
-        if (1-max_distance)*pc1_right_mean <= tuple_2d[0] <= pc1_right_mean*(1+max_distance):
+        if (1-threshold)*pc1_right_mean <= tuple_2d[0] <= pc1_right_mean*(1+threshold):
             anomal_tuple = False
 
         if tuple_2d[1] > pc2_max or tuple_2d[1] < pc2_min:
