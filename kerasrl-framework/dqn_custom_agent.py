@@ -88,7 +88,7 @@ class DQNCustomAgent(DQNAgent):
         next_observation = new_tuple_data[-(len_observation+1):-1]
         return next_observation, new_tuple_data
 
-    def test(self, env, tuple_csv_name, reward_csv_name, defense=False, classification_csv_name=None, anomaly_method=None, substitution_method=None, kmeans_filepath=None, tuples_filepath=None, threshold=None, nb_episodes=1, action_repetition=1, callbacks=None, visualize=True,
+    def test(self, env, tuple_csv_name, reward_csv_name, defense=False, classification_csv_name=None, anomaly_method=None, substitution_method=None, kmeans_filepath=None, tuples_filepath=None, normalize=False, normalizer_filepath=None, threshold=None, nb_episodes=1, action_repetition=1, callbacks=None, visualize=True,
              nb_max_episode_steps=None, nb_max_start_steps=0, start_step_policy=None, verbose=1):
         """Callback that is called before training begins.
         # Arguments
@@ -147,20 +147,28 @@ class DQNCustomAgent(DQNAgent):
             columns=header_array+['anomalo'])
 
         if defense:
-            # Cargo el modelo de clasificacion de estados anomalos
-            kmeans_model = pickle.load(open(kmeans_filepath, "rb"))
-            # Cargo el dataframe de estados seguros
-            tuples_df = pd.read_csv(tuples_filepath)
-            # Creo un modelo PCA para reducir la dimensionalidad
-            pca_model = PCA(n_components=2)
-            # Entreno el modelo PCA con los estados seguros, igual que en los notebooks
-            tuples_2d_df = pd.DataFrame(
-                pca_model.fit_transform(tuples_df.values))
-            # Añado los nombres de las columnas al dataframe de dos dimensiones
-            tuples_2d_df.columns = ["PC1_2d", "PC2_2d"]
-            # Creo la funcion de interpolacion lineal
-            linear_interpolation_func = scipy.interpolate.interp1d(
-                tuples_2d_df.PC1_2d, tuples_2d_df.PC2_2d, kind='linear')
+            if normalize:
+                normalizer = pickle.load(open(normalizer_filepath, 'rb'))
+            if anomaly_method == 1:
+                # Cargo el modelo de clasificacion de estados anomalos
+                kmeans_model = pickle.load(open(kmeans_filepath, "rb"))
+            else:
+                # Cargo el dataframe de estados seguros
+                tuples_df = pd.read_csv(tuples_filepath)
+                if normalize:
+                    x_scaled = normalizer.transform(tuples_df.values)
+                    tuples_df = pd.DataFrame(
+                        x_scaled, columns=tuples_df.columns)
+                # Creo un modelo PCA para reducir la dimensionalidad
+                pca_model = PCA(n_components=2)
+                # Entreno el modelo PCA con los estados seguros, igual que en los notebooks
+                tuples_2d_df = pd.DataFrame(
+                    pca_model.fit_transform(tuples_df.values))
+                # Añado los nombres de las columnas al dataframe de dos dimensiones
+                tuples_2d_df.columns = ["PC1_2d", "PC2_2d"]
+                # Creo la funcion de interpolacion lineal
+                linear_interpolation_func = scipy.interpolate.interp1d(
+                    tuples_2d_df.PC1_2d, tuples_2d_df.PC2_2d, kind='linear')
 
         callbacks = [] if not callbacks else callbacks[:]
 
@@ -268,16 +276,20 @@ class DQNCustomAgent(DQNAgent):
                     # 3 SI ES ANOMALA, SUSTITUYO EL ESTADO_SIGUIENTE POR ALGO QUE NO SEA ANOMALO
                     if defense:
                         anomal_tuple = False
+                        tuple_data_aux = tuple_data
+                        if normalize:
+                            tuple_data_aux = normalizer.transform(
+                                [tuple_data_aux])[0]
                         # Comprobamos si la tupla es anomala de alguna manera
                         if anomaly_method == 1:
                             anomal_tuple = self.detect_with_kmeans(
-                                kmeans_model, tuple_data, threshold)
+                                kmeans_model, tuple_data_aux, threshold)
                         elif anomaly_method == 2:
                             anomal_tuple = self.detect_with_interpolation(
-                                tuple_data, pca_model, linear_interpolation_func, threshold)
+                                tuple_data_aux, pca_model, linear_interpolation_func, threshold)
                         elif anomaly_method == 3:
                             anomal_tuple = self.detect_column_cartpole(
-                                tuple_data, tuples_2d_df, pca_model, threshold)
+                                tuple_data_aux, tuples_2d_df, pca_model, threshold)
 
                         # Si la tupla es anomala, hacemos algo
                         if anomal_tuple:

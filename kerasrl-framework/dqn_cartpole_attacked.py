@@ -151,10 +151,12 @@ elif args.mode == 'testd':
              reward_csv_name="ejecuciones_cartpole/cartpole_reward_defense.csv",
              defense=True,
              classification_csv_name="resultados_clasificadores/cartpole_classification.csv",
-             anomaly_method=3,
+             anomaly_method=1,
              substitution_method=1,
              kmeans_filepath="notebooks/kmeans_cartpole_500c.pkl",
              tuples_filepath="ejecuciones_cartpole/cartpole_noattack.csv",
+             normalize=True,
+             normalizer_filepath="notebooks/minmaxscaler_cartpole.pkl",
              threshold=50,
              nb_episodes=5,
              visualize=False)
