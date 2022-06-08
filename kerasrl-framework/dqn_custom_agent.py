@@ -88,7 +88,7 @@ class DQNCustomAgent(DQNAgent):
         next_observation = new_tuple_data[-(len_observation+1):-1]
         return next_observation, new_tuple_data
 
-    def test(self, env, tuple_csv_name, reward_csv_name, defense=False, classification_csv_name=None, anomaly_method=None, substitution_method=None, kmeans_filepath=None, tuples_filepath=None, max_distance=None, nb_episodes=1, action_repetition=1, callbacks=None, visualize=True,
+    def test(self, env, tuple_csv_name, reward_csv_name, defense=False, classification_csv_name=None, anomaly_method=None, substitution_method=None, kmeans_filepath=None, tuples_filepath=None, threshold=None, nb_episodes=1, action_repetition=1, callbacks=None, visualize=True,
              nb_max_episode_steps=None, nb_max_start_steps=0, start_step_policy=None, verbose=1):
         """Callback that is called before training begins.
         # Arguments
@@ -271,13 +271,13 @@ class DQNCustomAgent(DQNAgent):
                         # Comprobamos si la tupla es anomala de alguna manera
                         if anomaly_method == 1:
                             anomal_tuple = self.detect_with_kmeans(
-                                kmeans_model, tuple_data, max_distance)
+                                kmeans_model, tuple_data, threshold)
                         elif anomaly_method == 2:
                             anomal_tuple = self.detect_with_interpolation(
-                                tuple_data, pca_model, linear_interpolation_func, max_distance)
+                                tuple_data, pca_model, linear_interpolation_func, threshold)
                         elif anomaly_method == 3:
                             anomal_tuple = self.detect_column_cartpole(
-                                tuple_data, tuples_2d_df, pca_model, max_distance)
+                                tuple_data, tuples_2d_df, pca_model, threshold)
 
                         # Si la tupla es anomala, hacemos algo
                         if anomal_tuple:
