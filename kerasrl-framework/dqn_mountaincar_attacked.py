@@ -123,8 +123,8 @@ elif args.mode == 'testd':
              classification_csv_name="resultados_clasificadores/mountaincar_classification.csv",
              anomaly_method=2,
              substitution_method=1,
-             kmeans_filepath="notebooks/kmeans_mountaincar_1000c.pkl",
+             kmeans_filepath="notebooks/kmeans_mountaincar_2048c_norm.pkl",
              tuples_filepath="ejecuciones_mountaincar/mountaincar_noattack.csv",
-             max_distance=50,
+             threshold=50,
              nb_episodes=5,
              visualize=False)

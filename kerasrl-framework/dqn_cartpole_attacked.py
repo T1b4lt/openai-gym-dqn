@@ -155,6 +155,6 @@ elif args.mode == 'testd':
              substitution_method=1,
              kmeans_filepath="notebooks/kmeans_cartpole_500c.pkl",
              tuples_filepath="ejecuciones_cartpole/cartpole_noattack.csv",
-             max_distance=50,
+             threshold=50,
              nb_episodes=5,
              visualize=False)
