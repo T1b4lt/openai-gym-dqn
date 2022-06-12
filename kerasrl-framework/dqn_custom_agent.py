@@ -202,8 +202,8 @@ class DQNCustomAgent(DQNAgent):
             # Obtain the initial observation by resetting the environment.
             self.reset_states()
             observation = deepcopy(env.reset())
-            if self.processor is not None:
-                observation = self.processor.process_observation(observation)
+            # if self.processor is not None:
+            # observation = self.processor.process_observation(observation)
             assert observation is not None
 
             # Perform random starts at beginning of episode and do not record them into the experience.

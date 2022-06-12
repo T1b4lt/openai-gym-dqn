@@ -128,5 +128,5 @@ elif args.mode == 'testd':
              normalize=True,
              normalizer_filepath="notebooks/minmaxscaler_mountaincar.pkl",
              threshold=0.05,
-             nb_episodes=1000,
+             nb_episodes=5,
              visualize=False)
