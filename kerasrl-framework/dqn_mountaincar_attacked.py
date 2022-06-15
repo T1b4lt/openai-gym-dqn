@@ -104,8 +104,11 @@ elif args.mode == 'testa':
     if args.weights:
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
-    dqn.test(env, tuple_csv_name="ejecuciones_mountaincar/mountaincar_attack.csv", reward_csv_name="ejecuciones_mountaincar/mountaincar_reward_attack.csv",
-             nb_episodes=1000, visualize=False)
+    dqn.test(env,
+             tuple_csv_name="ejecuciones_mountaincar/mountaincar_attack.csv",
+             reward_csv_name="ejecuciones_mountaincar/mountaincar_reward_attack.csv",
+             nb_episodes=1000,
+             visualize=False)
 
 elif args.mode == 'testd':
     dqn = DQNCustomAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmup=1000,
@@ -128,5 +131,5 @@ elif args.mode == 'testd':
              normalize=True,
              normalizer_filepath="notebooks/minmaxscaler_mountaincar.pkl",
              threshold=0.05,
-             nb_episodes=5,
+             nb_episodes=1000,
              visualize=False)
