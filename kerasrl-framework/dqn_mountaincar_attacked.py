@@ -120,8 +120,8 @@ elif args.mode == 'testd':
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
     dqn.test(env,
-             tuple_csv_name="ejecuciones_mountaincar/mountaincar_defense_2.csv",
-             reward_csv_name="ejecuciones_mountaincar/mountaincar_reward_defense_2.csv",
+             tuple_csv_name="ejecuciones_mountaincar/mountaincar_defense_3.csv",
+             reward_csv_name="ejecuciones_mountaincar/mountaincar_reward_defense_3.csv",
              defense=True,
              classification_csv_name="resultados_clasificadores/mountaincar_classification.csv",
              anomaly_method=1,

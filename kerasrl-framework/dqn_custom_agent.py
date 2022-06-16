@@ -208,6 +208,7 @@ class DQNCustomAgent(DQNAgent):
 
             # Perform random starts at beginning of episode and do not record them into the experience.
             # This slightly changes the start position between games.
+            """
             nb_random_start_steps = 0 if nb_max_start_steps == 0 else np.random.randint(
                 nb_max_start_steps)
             for _ in range(nb_random_start_steps):
@@ -233,8 +234,11 @@ class DQNCustomAgent(DQNAgent):
                         observation = self.processor.process_observation(
                             observation)
                     break
+            """
 
             # Run the episode until we're done.
+            prev_safe_tuple_data = None
+            non_freeze_counter = 0
             done = False
             while not done:
                 callbacks.on_step_begin(episode_step)
@@ -248,9 +252,11 @@ class DQNCustomAgent(DQNAgent):
                     callbacks.on_action_begin(action)
                     next_observation_1, r, d, info = env.step(action)
 
-                    if self.processor is not None:
+                    if self.processor is not None and episode_step != 0:
                         next_observation_2, r, d, info = self.processor.process_step(
                             next_observation_1, r, d, info)
+                    else:
+                        next_observation_2 = next_observation_1
 
                     verdad_tupla_anomala = False
                     if (next_observation_1 != next_observation_2).any():
@@ -264,11 +270,6 @@ class DQNCustomAgent(DQNAgent):
                     for feature in next_observation_2:
                         tuple_data.append(feature)
                     tuple_data.append(r)
-
-                    # Guardamos tanto la tupla como la verdad de si esa tupla es anomala o no
-                    tuple_plus_anomaly = (tuple_data+[verdad_tupla_anomala])
-                    classification_dataframe.loc[len(
-                        classification_dataframe)] = tuple_plus_anomaly
 
                     # AQUI IRÁ EL BLOQUE DE DEFENSA - DEPENDIENTE DE UN PARAMETRO "DEF=True"
                     # 1 COJO LA TUPLA (OBSERVACION, ACCION, ESTADO_SIGUIENTE, RECOMPENSA)
@@ -295,16 +296,31 @@ class DQNCustomAgent(DQNAgent):
                         if anomal_tuple:
                             # Funcion que vuelve simplemente al estado anterior
                             if substitution_method == 1:
-                                next_observation_2, tuple_data = self.back_to_previous_observation(
-                                    tuple_data, len(observation))
+                                # next_observation_2, tuple_data = self.back_to_previous_observation(tuple_data, len(observation))
+                                non_freeze_counter += 1
+                                if non_freeze_counter < 10:
+                                    tuple_data = prev_safe_tuple_data
+                                    next_observation_2 = prev_safe_tuple_data[len(
+                                        observation)+1:len(observation)+1+len(observation)]
+                                else:
+                                    prev_safe_tuple_data = tuple_data
+                                    non_freeze_counter = 0
                             # Funcion que busca la tupla segura mas cercana a la actual
                             elif substitution_method == 2:
                                 next_observation_2, tuple_data = self.closest_safe_observation(
                                     tuple_data, tuples_df, len(observation), 0.01)
+                        else:
+                            prev_safe_tuple_data = tuple_data
+                            non_freeze_counter = 0
 
-                    # only append tuple_data if that row is not duplicated in the dataframe
+                    # Solo añadimos la tupla al dataframe si no esta repetida.
                     if not (tuple_dataframe == tuple_data).all(1).any():
                         tuple_dataframe.loc[len(tuple_dataframe)] = tuple_data
+
+                    # Guardamos tanto la tupla como la verdad de si esa tupla es anomala o no.
+                    tuple_plus_anomaly = (tuple_data+[verdad_tupla_anomala])
+                    classification_dataframe.loc[len(
+                        classification_dataframe)] = tuple_plus_anomaly
 
                     observation = deepcopy(next_observation_2)
 
