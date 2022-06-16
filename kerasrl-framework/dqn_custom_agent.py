@@ -88,7 +88,7 @@ class DQNCustomAgent(DQNAgent):
         next_observation = new_tuple_data[-(len_observation+1):-1]
         return next_observation, new_tuple_data
 
-    def test(self, env, tuple_csv_name, reward_csv_name, defense=False, classification_csv_name=None, anomaly_method=None, substitution_method=None, kmeans_filepath=None, tuples_filepath=None, normalize=False, normalizer_filepath=None, threshold=None, nb_episodes=1, action_repetition=1, callbacks=None, visualize=True,
+    def test(self, env, tuple_csv_name, reward_csv_name, defense=False, classification_csv_name=None, anomaly_method=None, substitution_method=None, kmeans_filepath=None, tuples_filepath=None, normalize=False, normalizer_filepath=None, threshold=None, non_freeze_threshold=10, nb_episodes=1, action_repetition=1, callbacks=None, visualize=True,
              nb_max_episode_steps=None, nb_max_start_steps=0, start_step_policy=None, verbose=1):
         """Callback that is called before training begins.
         # Arguments
@@ -298,7 +298,7 @@ class DQNCustomAgent(DQNAgent):
                             if substitution_method == 1:
                                 # next_observation_2, tuple_data = self.back_to_previous_observation(tuple_data, len(observation))
                                 non_freeze_counter += 1
-                                if non_freeze_counter < 10:
+                                if non_freeze_counter < non_freeze_threshold:
                                     tuple_data = prev_safe_tuple_data
                                     next_observation_2 = prev_safe_tuple_data[len(
                                         observation)+1:len(observation)+1+len(observation)]
