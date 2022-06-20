@@ -52,9 +52,13 @@ class CartpoleProcessor(Processor):
         return adv_observation
         """
         perturbation = 0
-        randnum = random.random()
-        if randnum < 0.5:
-            perturbation = 0.05
+        randnum_attack = random.random()
+        randnum_posneg = random.random()
+        if randnum_attack < 0.8:
+            if randnum_posneg < 0.5:
+                perturbation = 0.05
+            else:
+                perturbation = -0.05
         return observation + perturbation
 
 

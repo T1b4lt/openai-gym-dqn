@@ -22,9 +22,13 @@ from dqn_custom_agent import DQNCustomAgent
 class MountaincarProcessor(Processor):
     def process_observation(self, observation):
         perturbation = 0
-        randnum = random.random()
-        if randnum < 0.5:
-            perturbation = 0.05
+        randnum_attack = random.random()
+        randnum_posneg = random.random()
+        if randnum_attack < 0.5:
+            if randnum_posneg < 0.5:
+                perturbation = 0.05
+            else:
+                perturbation = -0.05
         return observation + perturbation
 
 
