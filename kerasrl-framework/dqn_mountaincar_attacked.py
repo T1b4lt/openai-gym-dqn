@@ -124,8 +124,8 @@ elif args.mode == 'testd':
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
     dqn.test(env,
-             tuple_csv_name="ejecuciones_mountaincar/mountaincar_defense_80%_+005_005_10.csv",
-             reward_csv_name="ejecuciones_mountaincar/mountaincar_reward_defense_80%_+005_005_10.csv",
+             tuple_csv_name="ejecuciones_mountaincar/mountaincar_defense_asd.csv",
+             reward_csv_name="ejecuciones_mountaincar/mountaincar_reward_defense_asd.csv",
              defense=True,
              classification_csv_name="resultados_clasificadores/mountaincar_classification.csv",
              anomaly_method=1,
@@ -136,5 +136,5 @@ elif args.mode == 'testd':
              normalizer_filepath="notebooks/minmaxscaler_mountaincar.pkl",
              threshold=0.05,
              non_freeze_threshold=10,
-             nb_episodes=200,
-             visualize=False)
+             nb_episodes=5,
+             visualize=True)
