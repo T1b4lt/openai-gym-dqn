@@ -54,11 +54,11 @@ class CartpoleProcessor(Processor):
         perturbation = 0
         randnum_attack = random.random()
         randnum_posneg = random.random()
-        if randnum_attack < 0.8:
+        if randnum_attack < 0.5:
             if randnum_posneg < 0.5:
-                perturbation = 0.05
+                perturbation = 0.1
             else:
-                perturbation = -0.05
+                perturbation = -0.1
         return observation + perturbation
 
 
@@ -138,8 +138,11 @@ elif args.mode == 'testa':
     if args.weights:
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
-    dqn.test(env, tuple_csv_name="ejecuciones_cartpole/cartpole_attack.csv", reward_csv_name="ejecuciones_cartpole/cartpole_reward_attack.csv",
-             nb_episodes=1000, visualize=False)
+    dqn.test(env,
+             tuple_csv_name="ejecuciones_cartpole/cartpole_attack_50%_+-01.csv",
+             reward_csv_name="ejecuciones_cartpole/cartpole_reward_attack_50%_+-01.csv",
+             nb_episodes=200,
+             visualize=False)
 
 elif args.mode == 'testd':
     dqn = DQNCustomAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmup=1000,
@@ -151,8 +154,8 @@ elif args.mode == 'testd':
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
     dqn.test(env,
-             tuple_csv_name="ejecuciones_cartpole/cartpole_defense_4.csv",
-             reward_csv_name="ejecuciones_cartpole/cartpole_reward_defense_4.csv",
+             tuple_csv_name="ejecuciones_cartpole/cartpole_defense_7_especial.csv",
+             reward_csv_name="ejecuciones_cartpole/cartpole_reward_defense_7_especial.csv",
              defense=True,
              classification_csv_name="resultados_clasificadores/cartpole_classification.csv",
              anomaly_method=1,
@@ -161,7 +164,7 @@ elif args.mode == 'testd':
              tuples_filepath="ejecuciones_cartpole/cartpole_noattack.csv",
              normalize=True,
              normalizer_filepath="notebooks/minmaxscaler_cartpole.pkl",
-             threshold=0.1,
-             non_freeze_threshold=2,
-             nb_episodes=1000,
+             threshold=0.15,
+             non_freeze_threshold=3,
+             nb_episodes=200,
              visualize=False)

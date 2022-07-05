@@ -23,8 +23,8 @@ class MountaincarProcessor(Processor):
     def process_observation(self, observation):
         perturbation = 0
         randnum_attack = random.random()
-        randnum_posneg = random.random()
-        if randnum_attack < 0.5:
+        randnum_posneg = 0  # random.random()
+        if randnum_attack < 0.8:
             if randnum_posneg < 0.5:
                 perturbation = 0.05
             else:
@@ -109,9 +109,9 @@ elif args.mode == 'testa':
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
     dqn.test(env,
-             tuple_csv_name="ejecuciones_mountaincar/mountaincar_attack.csv",
-             reward_csv_name="ejecuciones_mountaincar/mountaincar_reward_attack.csv",
-             nb_episodes=1000,
+             tuple_csv_name="ejecuciones_mountaincar/mountaincar_attack_50%_+-01.csv",
+             reward_csv_name="ejecuciones_mountaincar/mountaincar_reward_attack_50%_+-01.csv",
+             nb_episodes=200,
              visualize=False)
 
 elif args.mode == 'testd':
@@ -124,8 +124,8 @@ elif args.mode == 'testd':
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
     dqn.test(env,
-             tuple_csv_name="ejecuciones_mountaincar/mountaincar_defense_3.csv",
-             reward_csv_name="ejecuciones_mountaincar/mountaincar_reward_defense_3.csv",
+             tuple_csv_name="ejecuciones_mountaincar/mountaincar_defense_80%_+005_005_10.csv",
+             reward_csv_name="ejecuciones_mountaincar/mountaincar_reward_defense_80%_+005_005_10.csv",
              defense=True,
              classification_csv_name="resultados_clasificadores/mountaincar_classification.csv",
              anomaly_method=1,
@@ -136,5 +136,5 @@ elif args.mode == 'testd':
              normalizer_filepath="notebooks/minmaxscaler_mountaincar.pkl",
              threshold=0.05,
              non_freeze_threshold=10,
-             nb_episodes=1000,
+             nb_episodes=200,
              visualize=False)
