@@ -53,12 +53,12 @@ class CartpoleProcessor(Processor):
         """
         perturbation = 0
         randnum_attack = random.random()
-        randnum_posneg = random.random()
-        if randnum_attack < 0.5:
+        randnum_posneg = 0  # random.random()
+        if randnum_attack < 0.2:
             if randnum_posneg < 0.5:
-                perturbation = 0.1
+                perturbation = 0.05
             else:
-                perturbation = -0.1
+                perturbation = -0.05
         return observation + perturbation
 
 
@@ -139,9 +139,9 @@ elif args.mode == 'testa':
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
     dqn.test(env,
-             tuple_csv_name="ejecuciones_cartpole/cartpole_attack_50%_+-01.csv",
-             reward_csv_name="ejecuciones_cartpole/cartpole_reward_attack_50%_+-01.csv",
-             nb_episodes=200,
+             tuple_csv_name="ejecuciones_cartpole_tfm/cartpole_attack_asd.csv",
+             reward_csv_name="ejecuciones_cartpole_tfm/cartpole_reward_attack_asd.csv",
+             nb_episodes=5,
              visualize=False)
 
 elif args.mode == 'testd':
@@ -154,17 +154,17 @@ elif args.mode == 'testd':
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
     dqn.test(env,
-             tuple_csv_name="ejecuciones_cartpole/cartpole_defense_7_especial.csv",
-             reward_csv_name="ejecuciones_cartpole/cartpole_reward_defense_7_especial.csv",
+             tuple_csv_name="ejecuciones_cartpole_tfm/cartpole_defense_asd.csv",
+             reward_csv_name="ejecuciones_cartpole_tfm/cartpole_reward_defense_asd.csv",
              defense=True,
-             classification_csv_name="resultados_clasificadores/cartpole_classification.csv",
+             classification_csv_name="resultados_clasificadores_tfm/cartpole_classification.csv",
              anomaly_method=1,
              substitution_method=1,
              kmeans_filepath="notebooks/kmeans_cartpole_2048c_norm.pkl",
-             tuples_filepath="ejecuciones_cartpole/cartpole_noattack.csv",
+             tuples_filepath="ejecuciones_cartpole_tfm/cartpole_noattack.csv",
              normalize=True,
              normalizer_filepath="notebooks/minmaxscaler_cartpole.pkl",
              threshold=0.15,
              non_freeze_threshold=3,
-             nb_episodes=200,
+             nb_episodes=5,
              visualize=False)

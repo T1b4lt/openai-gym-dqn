@@ -24,7 +24,7 @@ class MountaincarProcessor(Processor):
         perturbation = 0
         randnum_attack = random.random()
         randnum_posneg = 0  # random.random()
-        if randnum_attack < 0.8:
+        if randnum_attack < 0.2:
             if randnum_posneg < 0.5:
                 perturbation = 0.05
             else:
@@ -109,9 +109,9 @@ elif args.mode == 'testa':
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
     dqn.test(env,
-             tuple_csv_name="ejecuciones_mountaincar/mountaincar_attack_50%_+-01.csv",
-             reward_csv_name="ejecuciones_mountaincar/mountaincar_reward_attack_50%_+-01.csv",
-             nb_episodes=200,
+             tuple_csv_name="ejecuciones_mountaincar_tfm/mountaincar_attack_asd.csv",
+             reward_csv_name="ejecuciones_mountaincar_tfm/mountaincar_reward_attack_asd.csv",
+             nb_episodes=5,
              visualize=False)
 
 elif args.mode == 'testd':
@@ -124,17 +124,17 @@ elif args.mode == 'testd':
         weights_filename = args.weights
     dqn.load_weights(weights_filename)
     dqn.test(env,
-             tuple_csv_name="ejecuciones_mountaincar/mountaincar_defense_asd.csv",
-             reward_csv_name="ejecuciones_mountaincar/mountaincar_reward_defense_asd.csv",
+             tuple_csv_name="ejecuciones_mountaincar_tfm/mountaincar_defense_asd.csv",
+             reward_csv_name="ejecuciones_mountaincar_tfm/mountaincar_reward_defense_asd.csv",
              defense=True,
-             classification_csv_name="resultados_clasificadores/mountaincar_classification.csv",
+             classification_csv_name="resultados_clasificadores_tfm/mountaincar_classification.csv",
              anomaly_method=1,
              substitution_method=1,
              kmeans_filepath="notebooks/kmeans_mountaincar_2048c_norm.pkl",
-             tuples_filepath="ejecuciones_mountaincar/mountaincar_noattack.csv",
+             tuples_filepath="ejecuciones_mountaincar_tfm/mountaincar_noattack.csv",
              normalize=True,
              normalizer_filepath="notebooks/minmaxscaler_mountaincar.pkl",
              threshold=0.05,
              non_freeze_threshold=10,
              nb_episodes=5,
-             visualize=True)
+             visualize=False)
