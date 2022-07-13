@@ -374,8 +374,6 @@ class DQNCustomAgent(DQNAgent):
         # Exporto el dataframe en un csv
         tuple_dataframe.to_csv(tuple_csv_name, index=False)
         reward_dataframe.to_csv(reward_csv_name, index=False)
-        if defense:
-            classification_dataframe.to_csv(
-                classification_csv_name, index=False)
+        classification_dataframe.to_csv(classification_csv_name, index=False)
 
         return history
